@@ -7,9 +7,9 @@ import (
 	"io"
 	"reflect"
 	"sort"
-
-	"github.com/mgutz/ansi"
 )
+
+var IgnoreKey = "JSONDIFF_IGNORE_FIELD"
 
 // ResolutionType defines a type of comparison: equality, non-equality,
 // new sub-diff and so on
@@ -23,13 +23,6 @@ const (
 	TypeDiff
 
 	indentation = "    "
-)
-
-var (
-	colorStartYellow = ansi.ColorCode("yellow")
-	colorStartRed    = ansi.ColorCode("red")
-	colorStartGreen  = ansi.ColorCode("green")
-	colorReset       = ansi.ColorCode("reset")
 )
 
 // Diff is a result of comparison operation. Provides list
@@ -89,8 +82,6 @@ func Compare(a, b interface{}) Diff {
 }
 
 // Format produces formatted output for a diff that can be printed.
-// Uses colourization which may not work with terminals that don't
-// support ASCII colouring (Windows is under question).
 func Format(diff Diff) []byte {
 	buf := bytes.Buffer{}
 
@@ -115,21 +106,13 @@ func writeItems(writer io.Writer, prefix string, items []DiffItem) {
 		case TypeEquals:
 			writeItem(writer, prefix, item.Key, item.ValueA, i < last)
 		case TypeNotEquals:
-			writer.Write([]byte(colorStartYellow))
-
 			writeItem(writer, prefixNotEqualsA, item.Key, item.ValueA, i < last)
 			writer.Write([]byte{'\n'})
 			writeItem(writer, prefixNotEqualsB, item.Key, item.ValueB, i < last)
-
-			writer.Write([]byte(colorReset))
 		case TypeAdded:
-			writer.Write([]byte(colorStartGreen))
 			writeItem(writer, prefixAdded, item.Key, item.ValueB, i < last)
-			writer.Write([]byte(colorReset))
 		case TypeRemoved:
-			writer.Write([]byte(colorStartRed))
 			writeItem(writer, prefixRemoved, item.Key, item.ValueA, i < last)
-			writer.Write([]byte(colorReset))
 		case TypeDiff:
 			subdiff := item.ValueB.([]DiffItem)
 			fmt.Fprintf(writer, "%s\"%s\": ", prefix, item.Key)
@@ -155,6 +138,15 @@ func writeItem(writer io.Writer, prefix, key string, value interface{}, isNotLas
 }
 
 func compare(A, B interface{}) (ResolutionType, Diff) {
+	aStr, aOK := A.(string)
+	bStr, bOK := B.(string)
+
+	if aOK || bOK {
+		if bStr == IgnoreKey || aStr == IgnoreKey {
+			return TypeEquals, Diff{}
+		}
+	}
+
 	equals := reflect.DeepEqual(A, B)
 	if equals {
 		return TypeEquals, Diff{}

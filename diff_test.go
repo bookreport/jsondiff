@@ -278,3 +278,22 @@ func TestDiffEquals(t *testing.T) {
 	assert.Equal(t, expected, actual.Items())
 	assert.True(t, actual.IsEqual())
 }
+
+func TestIgnoreKey(t *testing.T) {
+	mapA := map[string]interface{}{
+		"fieldA": IgnoreKey,
+	}
+
+	mapB := map[string]interface{}{
+		"fieldA": "abcDEF123",
+	}
+
+	expected := []DiffItem{
+		{"fieldA", IgnoreKey, TypeEquals, nil},
+	}
+
+	actual := Compare(mapA, mapB)
+
+	assert.Equal(t, expected, actual.Items())
+	assert.True(t, actual.IsEqual())
+}
