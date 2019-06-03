@@ -157,7 +157,11 @@ func compare(A, B interface{}) (ResolutionType, Diff) {
 
 	if okA && okB {
 		diff := compareStringMaps(mapA, mapB)
-		return TypeDiff, diff
+		if diff.hasDiff {
+			return TypeDiff, diff
+		} else {
+			return TypeEquals, Diff{}
+		}
 	}
 
 	arrayA, okA := A.([]interface{})
@@ -211,9 +215,8 @@ func compareStringMaps(A, B map[string]interface{}) Diff {
 
 	for _, kA := range keysA {
 		vA := A[kA]
-
-		vB, ok := B[kA]
-		if !ok {
+		vB, bPresent := B[kA]
+		if !bPresent {
 			result.Add(DiffItem{kA, vA, TypeRemoved, nil})
 			continue
 		}

@@ -294,6 +294,26 @@ func TestIgnoreKey(t *testing.T) {
 
 	actual := Compare(mapA, mapB)
 
+	assert.True(t, actual.IsEqual())
+
 	assert.Equal(t, expected, actual.Items())
+	assert.True(t, actual.IsEqual())
+}
+
+func TestIgnoreKeyNested(t *testing.T) {
+	mapA := map[string]interface{}{
+		"fieldA": map[string]interface{}{
+			"abc": IgnoreKey,
+		},
+	}
+
+	mapB := map[string]interface{}{
+		"fieldA": map[string]interface{}{
+			"abc": "def1234anbc",
+		},
+	}
+
+	actual := Compare(mapA, mapB)
+
 	assert.True(t, actual.IsEqual())
 }
